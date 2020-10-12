@@ -89,6 +89,7 @@ private:
   double average_measurement_, sum_measurement_=0;
   double average_measurement_count_=0;
   double measurement_needed_=100;
+  double measurement_duration_=0.000066;
   RSDriverParam driver_param_;
   typename PointCloudMsg<T_Point>::PointCloudPtr point_cloud_ptr_;
   std::shared_ptr<ThreadPool> thread_pool_ptr_;
@@ -378,7 +379,7 @@ inline double LidarDriverImpl<T_Point>::getAverageOffset(double lidar_time, doub
         average_measurement_count_++;
         sum_measurement_+=diff;
     } else {
-//        is_synchronized_=true;
+        is_synchronized_=true;
 
         average_measurement_ = sum_measurement_/measurement_needed_;
         std::cout << std::fixed << "Average measurement : " << average_measurement_ << std::endl;
@@ -434,7 +435,7 @@ inline void LidarDriverImpl<T_Point>::processMsop()
         setPointCloudMsgHeader(msg);
         if (driver_param_.decoder_param.use_lidar_clock == true)
         {
-          msg.timestamp = lidar_decoder_ptr_->getLidarTime(pkt.packet.data()) + average_offset_;
+          msg.timestamp = lidar_decoder_ptr_->getLidarTime(pkt.packet.data()) + average_offset_ + measurement_duration_;
         }
         else
         {
