@@ -65,6 +65,7 @@ private:
   void processDifop();
   void setScanMsgHeader(ScanMsg& msg);
   void setPointCloudMsgHeader(PointCloudMsg<T_Point>& msg);
+  double getAverageOffset(double lidar_time, double clock);
 
 private:
   Queue<PacketMsg> msop_pkt_queue_;
@@ -81,12 +82,17 @@ private:
   bool init_flag_;
   bool start_flag_;
   bool difop_flag_;
+  bool is_synchronized_=false;
   uint32_t point_cloud_seq_;
   uint32_t scan_seq_;
   uint32_t ndifop_count_;
+  double average_measurement_, sum_measurement_=0;
+  double average_measurement_count_=0;
+  double measurement_needed_=100;
   RSDriverParam driver_param_;
   typename PointCloudMsg<T_Point>::PointCloudPtr point_cloud_ptr_;
   std::shared_ptr<ThreadPool> thread_pool_ptr_;
+  double average_offset_;
 };
 
 template <typename T_Point>
@@ -364,6 +370,30 @@ inline void LidarDriverImpl<T_Point>::difopCallback(const PacketMsg& msg)
 }
 
 template <typename T_Point>
+inline double LidarDriverImpl<T_Point>::getAverageOffset(double lidar_time, double clock) {
+    if(measurement_needed_ > average_measurement_count_) {
+
+        double diff = abs(lidar_time - clock);
+
+        average_measurement_count_++;
+        sum_measurement_+=diff;
+    } else {
+//        is_synchronized_=true;
+
+        average_measurement_ = sum_measurement_/measurement_needed_;
+        std::cout << std::fixed << "Average measurement : " << average_measurement_ << std::endl;
+        double return_value = average_measurement_;
+        average_measurement_ = 0;
+        average_measurement_count_ = 0;
+        sum_measurement_=0;
+
+        return return_value;
+    }
+    return -1;
+
+}
+
+template <typename T_Point>
 inline void LidarDriverImpl<T_Point>::processMsop()
 {
   if (!difop_flag_ && driver_param_.wait_for_difop)
@@ -381,11 +411,18 @@ inline void LidarDriverImpl<T_Point>::processMsop()
   }
   while (msop_pkt_queue_.size() > 0)
   {
+//    std::cout << "msop q" << std::endl;
     PacketMsg pkt = msop_pkt_queue_.popFront();
     std::vector<T_Point> pointcloud_one_packet;
     int height = 1;
     int ret = lidar_decoder_ptr_->processMsopPkt(pkt.packet.data(), pointcloud_one_packet, height);
     scan_ptr_->packets.emplace_back(std::move(pkt));
+    if(!is_synchronized_) {
+      average_offset_ = getAverageOffset(lidar_decoder_ptr_->getLidarTime(pkt.packet.data()), getTime());
+      if(average_offset_ != -1) {
+//          std::cout << "Offset " << average_offset_ << std::endl;
+      }
+    }
     if ((ret == DECODE_OK || ret == FRAME_SPLIT))
     {
       point_cloud_ptr_->insert(point_cloud_ptr_->end(), pointcloud_one_packet.begin(), pointcloud_one_packet.end());
@@ -397,7 +434,7 @@ inline void LidarDriverImpl<T_Point>::processMsop()
         setPointCloudMsgHeader(msg);
         if (driver_param_.decoder_param.use_lidar_clock == true)
         {
-          msg.timestamp = lidar_decoder_ptr_->getLidarTime(pkt.packet.data());
+          msg.timestamp = lidar_decoder_ptr_->getLidarTime(pkt.packet.data()) + average_offset_;
         }
         else
         {
