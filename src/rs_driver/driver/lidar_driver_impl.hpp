@@ -94,6 +94,7 @@ private:
   typename PointCloudMsg<T_Point>::PointCloudPtr point_cloud_ptr_;
   std::shared_ptr<ThreadPool> thread_pool_ptr_;
   double average_offset_;
+  double last_time_sync_, limit_time_sync_=60;
 };
 
 template <typename T_Point>
@@ -388,6 +389,8 @@ inline double LidarDriverImpl<T_Point>::getAverageOffset(double lidar_time, doub
         average_measurement_count_ = 0;
         sum_measurement_=0;
 
+        last_time_sync_=getTime();
+
         return return_value;
     }
     return -1;
@@ -418,6 +421,9 @@ inline void LidarDriverImpl<T_Point>::processMsop()
     int height = 1;
     int ret = lidar_decoder_ptr_->processMsopPkt(pkt.packet.data(), pointcloud_one_packet, height);
     scan_ptr_->packets.emplace_back(std::move(pkt));
+    if(last_time_sync_ + limit_time_sync_ < getTime()) {
+      is_synchronized_=false;
+    }
     if(!is_synchronized_) {
       average_offset_ = getAverageOffset(lidar_decoder_ptr_->getLidarTime(pkt.packet.data()), getTime());
       if(average_offset_ != -1) {
