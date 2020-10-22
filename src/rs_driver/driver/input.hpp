@@ -52,6 +52,7 @@ private:
   inline bool setSocket(const std::string& pkt_type, const uint16_t& port);
   inline void getMsopPacket();
   inline void getDifopPacket();
+  inline void sendUCWPPacket();
   inline void getPcapPacket();
   inline void checkDifopDeadline();
   inline void checkMsopDeadline();
@@ -296,6 +297,29 @@ inline void Input::getDifopPacket()
     }
     free(precv_buffer);
   }
+}
+
+inline void Input::sendUCWPPacket() {
+    std::vector<char> buffer;
+    //Adding header
+    buffer.push_back(0xAA);
+    buffer.push_back(0x00);
+    buffer.push_back(0xFF);
+    buffer.push_back(0x11);
+
+    buffer.push_back(0x22);
+    buffer.push_back(0x22);
+    buffer.push_back(0xAA);
+    buffer.push_back(0xAA);
+
+    // Setting LIDAR rotation
+    buffer.push_back(0x04);
+    buffer.push_back(0xB0);
+
+    // Set up the LIDAR IP
+
+    // Set up
+    msop_sock_ptr_->send(boost::asio::buffer(buffer));
 }
 
 inline void Input::getPcapPacket()
