@@ -393,7 +393,7 @@ inline double LidarDriverImpl<T_Point>::getAverageOffset(double lidar_time, doub
 
         return return_value;
     }
-    return -1;
+    return average_offset_;
 
 }
 
@@ -426,9 +426,6 @@ inline void LidarDriverImpl<T_Point>::processMsop()
     }
     if(!is_synchronized_) {
       average_offset_ = getAverageOffset(lidar_decoder_ptr_->getLidarTime(pkt.packet.data()), getTime());
-      if(average_offset_ != -1) {
-//          std::cout << "Offset " << average_offset_ << std::endl;
-      }
     }
     if ((ret == DECODE_OK || ret == FRAME_SPLIT))
     {
