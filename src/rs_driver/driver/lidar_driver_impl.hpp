@@ -108,7 +108,7 @@ private:
                                                                const size_t& height)>
       point_cloud_transform_func_;
   typename PointCloudMsg<T_Point>::PointCloudPtr point_cloud_ptr_;
-  std::shared_ptr<ThreadPool> thread_pool_ptr_;
+
   double average_offset_;
   double last_time_sync_, limit_time_sync_=60;
 };
@@ -450,7 +450,7 @@ inline void LidarDriverImpl<T_Point>::processMsop()
 //    std::cout << "msop q" << std::endl;
     PacketMsg pkt = msop_pkt_queue_.popFront();
     int height = 1;
-    int ret = lidar_decoder_ptr_->processMsopPkt(pkt.packet.data(), *point_cloud_ptr_, height);
+    int ret = lidar_decoder_ptr_->processMsopPkt(pkt.packet.data(), *point_cloud_ptr_, height, average_offset_ + measurement_duration_);
     scan_ptr_->packets.emplace_back(std::move(pkt));
     if(last_time_sync_ + limit_time_sync_ < getTime()) {
       is_synchronized_=false;

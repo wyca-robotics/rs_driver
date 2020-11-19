@@ -278,7 +278,7 @@ public:
   DecoderBase(const DecoderBase&) = delete;
   DecoderBase& operator=(const DecoderBase&) = delete;
   virtual ~DecoderBase() = default;
-  virtual RSDecoderResult processMsopPkt(const uint8_t* pkt, std::vector<T_Point>& point_cloud_vec, int& height);
+  virtual RSDecoderResult processMsopPkt(const uint8_t* pkt, std::vector<T_Point>& point_cloud_vec, int& height, double total_time_offset =0);
   virtual RSDecoderResult processDifopPkt(const uint8_t* pkt);
   virtual void loadCalibrationFile(const std::string& angle_path);
   virtual void regRecvCallback(const std::function<void(const CameraTrigger&)>& callback);  ///< Camera trigger
@@ -290,7 +290,7 @@ protected:
   virtual float computeTemperature(const uint8_t& temp_low, const uint8_t& temp_high);
   virtual int azimuthCalibration(const float& azimuth, const int& channel);
   virtual void checkTriggerAngle(const int& angle, const double& timestamp);
-  virtual RSDecoderResult decodeMsopPkt(const uint8_t* pkt, std::vector<T_Point>& vec, int& height, int& azimuth) = 0;
+  virtual RSDecoderResult decodeMsopPkt(const uint8_t* pkt, std::vector<T_Point>& vec, int& height, int& azimuth, double total_time_offset=0) = 0;
   virtual RSDecoderResult decodeDifopPkt(const uint8_t* pkt) = 0;
   RSEchoMode getEchoMode(const LidarType& type, const uint8_t& return_mode);
   template <typename T_Msop>
@@ -437,14 +437,14 @@ inline RSDecoderResult DecoderBase<T_Point>::processDifopPkt(const uint8_t* pkt)
 
 template <typename T_Point>
 inline RSDecoderResult DecoderBase<T_Point>::processMsopPkt(const uint8_t* pkt, std::vector<T_Point>& point_cloud_vec,
-                                                            int& height)
+                                                            int& height, double total_time_offset)
 {
   if (pkt == NULL)
   {
     return PKT_NULL;
   }
   int azimuth = 0;
-  RSDecoderResult ret = decodeMsopPkt(pkt, point_cloud_vec, height, azimuth);
+  RSDecoderResult ret = decodeMsopPkt(pkt, point_cloud_vec, height, azimuth, total_time_offset);
   if (ret != RSDecoderResult::DECODE_OK)
   {
     return ret;

@@ -84,7 +84,7 @@ class DecoderRSBP : public DecoderBase<T_Point>
 public:
   explicit DecoderRSBP(const RSDecoderParam& param, const LidarConstantParameter& lidar_const_param);
   RSDecoderResult decodeDifopPkt(const uint8_t* pkt);
-  RSDecoderResult decodeMsopPkt(const uint8_t* pkt, std::vector<T_Point>& vec, int& height, int& azimuth);
+  RSDecoderResult decodeMsopPkt(const uint8_t* pkt, std::vector<T_Point>& vec, int& height, int& azimuth, double total_time_offset);
   double getLidarTime(const uint8_t* pkt);
 };
 
@@ -113,17 +113,18 @@ inline double DecoderRSBP<T_Point>::getLidarTime(const uint8_t* pkt)
 
 template <typename T_Point>
 inline RSDecoderResult DecoderRSBP<T_Point>::decodeMsopPkt(const uint8_t* pkt, std::vector<T_Point>& vec, int& height,
-                                                           int& azimuth)
+                                                           int& azimuth, double total_time_offset)
 {
   height = this->lidar_const_param_.LASER_NUM;
   const RSBPMsopPkt* mpkt_ptr = reinterpret_cast<const RSBPMsopPkt*>(pkt);
+
   if (mpkt_ptr->header.id != this->lidar_const_param_.MSOP_ID)
   {
     return RSDecoderResult::WRONG_PKT_HEADER;
   }
   azimuth = RS_SWAP_SHORT(mpkt_ptr->blocks[0].azimuth);
   this->current_temperature_ = this->computeTemperature(mpkt_ptr->header.temp_raw);
-  double block_timestamp = this->get_point_time_func_(pkt);
+  double block_timestamp = this->get_point_time_func_(pkt)+total_time_offset;
   this->check_camera_trigger_func_(azimuth, pkt);
   float azi_diff = 0;
   for (size_t blk_idx = 0; blk_idx < this->lidar_const_param_.BLOCKS_PER_PKT; blk_idx++)

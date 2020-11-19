@@ -84,7 +84,7 @@ class DecoderRS80 : public DecoderBase<T_Point>
 public:
   explicit DecoderRS80(const RSDecoderParam& param, const LidarConstantParameter& lidar_const_param);
   RSDecoderResult decodeDifopPkt(const uint8_t* pkt);
-  RSDecoderResult decodeMsopPkt(const uint8_t* pkt, std::vector<T_Point>& vec, int& height, int& azimuth);
+  RSDecoderResult decodeMsopPkt(const uint8_t* pkt, std::vector<T_Point>& vec, int& height, int& azimuth, double total_time_offset);
   double getLidarTime(const uint8_t* pkt);
 };
 
@@ -113,7 +113,7 @@ inline double DecoderRS80<T_Point>::getLidarTime(const uint8_t* pkt)
 
 template <typename T_Point>
 inline RSDecoderResult DecoderRS80<T_Point>::decodeMsopPkt(const uint8_t* pkt, std::vector<T_Point>& vec, int& height,
-                                                           int& azimuth)
+                                                           int& azimuth, double total_time_offset)
 {
   height = this->lidar_const_param_.LASER_NUM;
   const RS80MsopPkt* mpkt_ptr = reinterpret_cast<const RS80MsopPkt*>(pkt);

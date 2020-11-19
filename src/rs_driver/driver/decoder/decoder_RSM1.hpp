@@ -140,7 +140,7 @@ class DecoderRSM1 : public DecoderBase<T_Point>
 public:
   DecoderRSM1(const RSDecoderParam& param, const LidarConstantParameter& lidar_const_param);
   RSDecoderResult decodeDifopPkt(const uint8_t* pkt);
-  RSDecoderResult decodeMsopPkt(const uint8_t* pkt, std::vector<T_Point>& vec, int& height, int& azimuth);
+  RSDecoderResult decodeMsopPkt(const uint8_t* pkt, std::vector<T_Point>& vec, int& height, int& azimuth, double total_time_offset);
   double getLidarTime(const uint8_t* pkt);
   RSDecoderResult processMsopPkt(const uint8_t* pkt, std::vector<T_Point>& pointcloud_vec, int& height);
 
@@ -200,7 +200,7 @@ inline RSDecoderResult DecoderRSM1<T_Point>::processMsopPkt(const uint8_t* pkt, 
 
 template <typename T_Point>
 inline RSDecoderResult DecoderRSM1<T_Point>::decodeMsopPkt(const uint8_t* pkt, std::vector<T_Point>& vec, int& height,
-                                                           int& azimuth)
+                                                           int& azimuth, double total_time_offset)
 {
   height = this->lidar_const_param_.LASER_NUM;
   RSM1MsopPkt* mpkt_ptr = (RSM1MsopPkt*)pkt;
