@@ -76,6 +76,41 @@ typedef struct
   uint16_t tail;
 } RSBPDifopPkt;
 
+const double timeDiffChl[32] = {
+  0.0,
+  2.56,
+  5.12,
+  7.68,
+  10.24,
+  12.80,
+  15.36,
+  17.92,
+  25.68,
+  28.24,
+  30.80,
+  33.36,
+  35.92,
+  38.48,
+  41.04,
+  43.60,
+  1.28,
+  3.84,
+  6.40,
+  8.96,
+  11.52,
+  14.08,
+  16.64,
+  19.20,
+  26.96,
+  29.52,
+  32.08,
+  34.64,
+  37.20,
+  39.76,
+  42.32,
+  44.88
+};
+
 #pragma pack(pop)
 
 template <typename T_Point>
@@ -124,9 +159,11 @@ inline RSDecoderResult DecoderRSBP<T_Point>::decodeMsopPkt(const uint8_t* pkt, s
   }
   azimuth = RS_SWAP_SHORT(mpkt_ptr->blocks[0].azimuth);
   this->current_temperature_ = this->computeTemperature(mpkt_ptr->header.temp_raw);
-  double block_timestamp = this->get_point_time_func_(pkt)+total_time_offset;
+  double block_timestamp = 0;//this->get_point_time_func_(pkt)+total_time_offset;
+  double point_timestamp;
   this->check_camera_trigger_func_(azimuth, pkt);
   float azi_diff = 0;
+
   for (size_t blk_idx = 0; blk_idx < this->lidar_const_param_.BLOCKS_PER_PKT; blk_idx++)
   {
     if (mpkt_ptr->blocks[blk_idx].id != this->lidar_const_param_.BLOCK_ID)
@@ -179,6 +216,8 @@ inline RSDecoderResult DecoderRSBP<T_Point>::decodeMsopPkt(const uint8_t* pkt, s
       int angle_horiz = static_cast<int>(azi_channel_ori + RS_ONE_ROUND) % RS_ONE_ROUND;
       int angle_vert = ((this->vert_angle_list_[channel_idx]) + RS_ONE_ROUND) % RS_ONE_ROUND;
 
+      // Get point timestamp from lookup tab
+      point_timestamp = timeDiffChl[channel_idx];
       // store to point cloud buffer
       T_Point point;
       if ((distance <= this->param_.max_distance && distance >= this->param_.min_distance) &&
@@ -206,7 +245,7 @@ inline RSDecoderResult DecoderRSBP<T_Point>::decodeMsopPkt(const uint8_t* pkt, s
         setIntensity(point, 0);
       }
       setRing(point, this->beam_ring_table_[channel_idx]);
-      setTimestamp(point, block_timestamp);
+      setTimestamp(point, point_timestamp+block_timestamp);
       vec.emplace_back(std::move(point));
     }
   }
